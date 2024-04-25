@@ -106,30 +106,49 @@ def get_list_of_chats(path: str) -> list[str]:
     return sorted([f.replace(".jsonl", "") for f in files])
 
 
-def create_chat_button(label: str, click_action):
+def create_chat_button(label: str, list_of_chats, click_action):
     button = pn.widgets.Button(
         name=label,
-        button_type='light'
+        button_type='light',
+        button_style='solid',
+        width_policy='max'
     )
-    button.on_click(click_action)
+
+    def wrapped_click_action(event):
+        for btn in list_of_chats.objects:
+            btn.button_type = 'light'
+        button.button_type = 'default'
+        # Find the index of the clicked button
+        index = list_of_chats.objects.index(button)
+        # Move the clicked button to the top
+        item = list_of_chats.pop(index)
+        list_of_chats.insert(0, item)
+        # Call the original click action
+        click_action(event)
+
+    button.on_click(wrapped_click_action)
     return button
 
 
 def load_chat_from_file(chat_context: Dict, path: str, chat_instance: ChatInterface) -> None:
     """
     Load chat from a file
+    :param chat_context:
     :param chat_instance:
     :param path:
     :return:
     """
     chat_instance.clear()
 
-    print(path)
+    chat_context["chat_memory"] = []
+    chat_context["chat_memory_file"] = path
 
-    if os.path.exists(path):
-        chat_context["chat_memory"] = []
-        chat_context["chat_memory_file"] = path
-
+    if not os.path.exists(path):
+        chat_instance.send("Hello, how can I help you?",
+                           user='Assistant',
+                           avatar=AVATAR_BOT,
+                           respond=False)
+    else:
         with open(path, 'r') as f:
             for line in f:
                 message = json.loads(line.strip())
@@ -150,3 +169,31 @@ def load_chat_from_file(chat_context: Dict, path: str, chat_instance: ChatInterf
             avatar=AVATAR_SYSTEM,
             respond=False
         )
+
+
+def start_new_chat(chat_context: Dict, list_of_chats, chat_instance: ChatInterface):
+    """
+    Start a new chat
+    :return:
+    """
+    chat_instance.clear()
+
+    chat_label = f"chat_memory_{get_timestamp()}"
+
+    chat_context["chat_memory"] = []
+    chat_context["chat_memory_file"] = f"chats/{chat_label}.jsonl"
+
+    chat_instance.send("Hello, how can I help you?",
+                       user='Assistant',
+                       avatar=AVATAR_BOT,
+                       respond=False)
+
+    button = create_chat_button(
+        label=chat_label,
+        list_of_chats=list_of_chats,
+        click_action=lambda event: load_chat_from_file(
+            chat_context=chat_context,
+            path=f"chats/{event.obj.name}.jsonl",
+            chat_instance=chat_instance)
+    )
+    list_of_chats.insert(0, button)

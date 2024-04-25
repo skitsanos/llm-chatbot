@@ -7,7 +7,7 @@ from openai.types.chat.chat_completion_chunk import Choice
 from panel.chat import ChatInterface
 
 from chat_utils.core import get_timestamp, get_models, get_list_of_chats, create_chat_button, \
-    load_chat_from_file, AVATAR_SYSTEM, AVATAR_BOT, AVATAR_USER
+    load_chat_from_file, AVATAR_SYSTEM, AVATAR_BOT, AVATAR_USER, start_new_chat
 from chat_utils.fs import prepare_folders, save_jsonl
 
 # https://panel.holoviz.org/
@@ -23,7 +23,8 @@ current_context = {
 sidebar_selector = pn.widgets.Select(
     name="Model",
     description="Select the model to use",
-    options=get_models()
+    options=get_models(),
+    width_policy='max'
 )
 
 sidebar_keep_memory = pn.widgets.Checkbox(
@@ -31,7 +32,8 @@ sidebar_keep_memory = pn.widgets.Checkbox(
     value=True,
 )
 
-sidebar_list_of_chats = pn.Column(pn.pane.Markdown("### History"))
+# sidebar_list_of_chats = pn.Column(pn.pane.Markdown("### History"))
+sidebar_list_of_chats = pn.Column(width_policy='max')
 
 client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
@@ -117,8 +119,20 @@ ui = pn.template.FastListTemplate(
     title=f"Chat",
     header_background="black",
     sidebar=[
+        pn.widgets.Button(
+            name="New Chat",
+            button_type='primary',
+            width_policy='max',
+            on_click=lambda event: start_new_chat(
+                chat_context=current_context,
+                chat_instance=chat_interface,
+                list_of_chats=sidebar_list_of_chats
+            )
+        ),
+        pn.pane.Markdown("### Model"),
         sidebar_selector,
         sidebar_keep_memory,
+        pn.pane.Markdown("### History"),
         sidebar_list_of_chats
     ],
     main=[chat_interface]
@@ -126,15 +140,22 @@ ui = pn.template.FastListTemplate(
 
 chat_files = get_list_of_chats("chats")
 for chat in chat_files:
-    chat_button = create_chat_button(chat, lambda event: load_chat_from_file(
-        chat_context=current_context,
-        path=f"chats/{event.obj.name}.jsonl",
-        chat_instance=chat_interface))
+    chat_button = create_chat_button(
+        label=chat,
+        list_of_chats=sidebar_list_of_chats,
+        click_action=lambda event: load_chat_from_file(
+            chat_context=current_context,
+            path=f"chats/{event.obj.name}.jsonl",
+            chat_instance=chat_interface)
+    )
     sidebar_list_of_chats.append(chat_button)
 
 if __name__ == "__main__":
     chat_interface.show()
 else:
-    chat_interface.send("Hello, how can I help you?", user='Assistant', avatar=AVATAR_BOT,
-                        respond=False)
+    start_new_chat(
+        chat_context=current_context,
+        chat_instance=chat_interface,
+        list_of_chats=sidebar_list_of_chats
+    )
     ui.servable()

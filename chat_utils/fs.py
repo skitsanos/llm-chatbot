@@ -24,3 +24,16 @@ def save_jsonl(file_path: str, data: List[Dict]):
     with open(file_path, 'w') as f:
         for item in data:
             f.write(json.dumps(item) + '\n')
+
+
+def load_jsonl(file_path: str) -> List[Dict]:
+    """
+    Load a list of dictionaries from a jsonl file
+    :param file_path: Path to the file
+    :return: List of dictionaries
+    """
+    data = []
+    with open(file_path, 'r') as f:
+        for line in f:
+            data.append(json.loads(line))
+    return data

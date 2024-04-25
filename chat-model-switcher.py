@@ -6,38 +6,25 @@ from openai.types.chat import ChatCompletionChunk
 from openai.types.chat.chat_completion_chunk import Choice
 from panel.chat import ChatInterface
 
+from chat_utils.core import get_timestamp, get_models
+from chat_utils.fs import prepare_folders, save_jsonl
+
 # https://panel.holoviz.org/
 pn.extension()
 
+prepare_folders(["chats"])
+
 AVATAR_USER = "https://api.iconify.design/carbon:user.svg"
 AVATAR_BOT = "https://api.iconify.design/carbon:chat-bot.svg"
-AVATAR_SYSTEM="https://api.iconify.design/carbon:ibm-event-automation.svg"
+AVATAR_SYSTEM = "https://api.iconify.design/carbon:ibm-event-automation.svg"
 
 chat_memory = []
+chat_memory_file = f"chats/chat_memory_{get_timestamp()}.jsonl"
 
 sidebar_selector = pn.widgets.Select(
     name="Model",
     description="Select the model to use",
-    options={
-        "LLaMA3 8b":
-            {
-                "model": "llama3-8b-8192",
-                "base_url": "https://api.groq.com/openai/v1",
-                "provider": "groq"
-            },
-        "Mixtral 8x7b":
-            {
-                "model": "mixtral-8x7b-32768",
-                "base_url": "https://api.groq.com/openai/v1",
-                "provider": "groq"
-            },
-        "GPT-4":
-            {
-                "model": "gpt-4-turbo",
-                "base_url": "https://api.openai.com/v1",
-                "provider": "openai"
-            }
-    },
+    options=get_models()
 )
 
 sidebar_keep_memory = pn.widgets.Checkbox(
@@ -61,7 +48,10 @@ def model_selected(event):
     selected_model = sidebar_selector.value
 
     chat_interface.send(
-        f"Model changed to {selected_model['model']}",
+        f"""
+        Model changed to `{selected_model['model']}`. This model has \
+        `{selected_model['context_window']}` tokens context window.
+        """,
         avatar=AVATAR_SYSTEM,
         user='System',
         respond=False
@@ -104,14 +94,15 @@ def get_response(user_input: str, user, instance: ChatInterface):
             if 'end' in chunk and chunk.end:
                 break  # Exit the loop if the stream is marked as ended
     finally:
-        instance.scroll = True
         # Append the collected replies as a single entry to the chat history
         if replies:  # Ensure we do not add empty responses
             chat_memory.append({"role": "assistant", "content": replies})
         response.close()  # Ensure the stream is properly closed after processing
+        save_jsonl(chat_memory_file, chat_memory)
 
 
 chat_interface = ChatInterface(
+    scroll=True,
     user="You",
     avatar=AVATAR_USER,
     callback=get_response,

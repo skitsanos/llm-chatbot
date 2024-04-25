@@ -49,7 +49,7 @@ tasks:
 - `chat-model-switcher` showcasing a chat interface with model switching.
 - `chat-contexts` showcasing a chat interface with chat history switching.
 
-Tu run the examples, you can use the Taskfile commands like this:
+To run the examples, you can use the Taskfile commands like this:
 
 ```bash
 task chat-single-model

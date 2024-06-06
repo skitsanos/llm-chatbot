@@ -1,3 +1,5 @@
 openai
 panel
 watchfiles
+llama-index-agent-openai
+llama-index-llms-openai

@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Dict
 
 import panel as pn
+from llama_index.core.tools import FunctionTool
 from panel.chat import ChatInterface
 
 AVATAR_USER = "https://api.iconify.design/carbon:user.svg"
@@ -84,7 +85,9 @@ def get_timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%d_%H%M%S")
 
 
-def get_list_of_chats(path: str) -> list[str]:
+def get_list_of_chats(
+        path: str
+) -> list[str]:
     """
     Get a list of chat files in the directory
     :param path:
@@ -106,7 +109,11 @@ def get_list_of_chats(path: str) -> list[str]:
     return sorted([f.replace(".jsonl", "") for f in files])
 
 
-def create_chat_button(label: str, list_of_chats, click_action):
+def create_chat_button(
+        label: str,
+        list_of_chats,
+        click_action
+):
     button = pn.widgets.Button(
         name=label,
         button_type='light',
@@ -114,7 +121,9 @@ def create_chat_button(label: str, list_of_chats, click_action):
         width_policy='max'
     )
 
-    def wrapped_click_action(event):
+    def wrapped_click_action(
+            event
+    ):
         for btn in list_of_chats.objects:
             btn.button_type = 'light'
         button.button_type = 'default'
@@ -130,7 +139,11 @@ def create_chat_button(label: str, list_of_chats, click_action):
     return button
 
 
-def load_chat_from_file(chat_context: Dict, path: str, chat_instance: ChatInterface) -> None:
+def load_chat_from_file(
+        chat_context: Dict,
+        path: str,
+        chat_instance: ChatInterface
+) -> None:
     """
     Load chat from a file
     :param chat_context:
@@ -171,7 +184,11 @@ def load_chat_from_file(chat_context: Dict, path: str, chat_instance: ChatInterf
         )
 
 
-def start_new_chat(chat_context: Dict, list_of_chats, chat_instance: ChatInterface):
+def start_new_chat(
+        chat_context: Dict,
+        list_of_chats,
+        chat_instance: ChatInterface
+):
     """
     Start a new chat
     :return:
@@ -191,9 +208,17 @@ def start_new_chat(chat_context: Dict, list_of_chats, chat_instance: ChatInterfa
     button = create_chat_button(
         label=chat_label,
         list_of_chats=list_of_chats,
-        click_action=lambda event: load_chat_from_file(
+        click_action=lambda
+            event: load_chat_from_file(
             chat_context=chat_context,
             path=f"chats/{event.obj.name}.jsonl",
             chat_instance=chat_instance)
     )
     list_of_chats.insert(0, button)
+
+
+def llamaindex_tool(
+        func,
+        description: str = None
+):
+    return FunctionTool.from_defaults(fn=func, description=description)

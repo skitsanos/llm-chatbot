@@ -76,7 +76,8 @@ def get_response(user_input: str, user, instance: ChatInterface):
     response: Stream[ChatCompletionChunk] = client.chat.completions.create(
         model=sidebar_selector.value["model"],
         messages=current_context["chat_memory"],
-        stream=True
+        stream=True,
+        #tool_choice='auto'
     )
 
     replies = ""

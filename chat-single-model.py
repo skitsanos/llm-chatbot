@@ -7,7 +7,7 @@ from openai.types.chat.chat_completion_chunk import Choice
 from panel.chat import ChatInterface
 
 from chat_utils.core import get_timestamp
-from chat_utils.fs import prepare_folders, save_jsonl
+from chat_utils.fs import prepare_folders
 
 # https://panel.holoviz.org/
 pn.extension()
@@ -43,6 +43,7 @@ def get_response(user_input: str, user, instance: ChatInterface):
         for chunk in response:
             if chunk.choices:
                 choice: Choice = chunk.choices[0]
+
                 text = choice.delta.content
                 if text:
                     replies += text
@@ -59,7 +60,7 @@ def get_response(user_input: str, user, instance: ChatInterface):
         if replies:  # Ensure we do not add empty responses
             chat_memory.append({"role": "assistant", "content": replies})
         response.close()  # Ensure the stream is properly closed after processing
-        save_jsonl(chat_memory_file, chat_memory)
+        #save_jsonl(chat_memory_file, chat_memory)
 
 
 chat_interface = ChatInterface(
